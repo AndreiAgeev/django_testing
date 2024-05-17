@@ -61,7 +61,7 @@ class TestSlug(TestCase):
             response,
             form='form',
             field='slug',
-            errors=test_slug+WARNING
+            errors=test_slug + WARNING
         )
         self.assertEqual(Note.objects.count(), 1)
 
