@@ -1,20 +1,22 @@
-import pytest
-
 from http import HTTPStatus
 
+import pytest
 from django.urls import reverse
-from pytest_django.asserts import assertRedirects, assertFormError
+from pytest_django.asserts import assertFormError, assertRedirects
 
 from news.forms import WARNING
 from news.models import Comment
 
+author_client = pytest.lazy_fixture('author_client')
+not_author_client = pytest.lazy_fixture('not_author_client')
+client = pytest.lazy_fixture('client')
 
-@pytest.mark.django_db
+
 @pytest.mark.parametrize(
     'user_client, result',
     (
-        (pytest.lazy_fixture('author_client'), True),
-        (pytest.lazy_fixture('client'), False)
+        (author_client, True),
+        (client, False)
     )
 )
 def test_comment_creation(user_client, result, news_id, form_comment, author):
@@ -47,8 +49,8 @@ def test_user_cant_use_bad_words(author_client, news_id, form_comment):
 @pytest.mark.parametrize(
     'user_client, result',
     (
-        (pytest.lazy_fixture('author_client'), True),
-        (pytest.lazy_fixture('not_author_client'), False)
+        (author_client, True),
+        (not_author_client, False)
     )
 )
 def test_delete_comment(user_client, result, news_id, comment_id):
@@ -68,21 +70,20 @@ def test_delete_comment(user_client, result, news_id, comment_id):
 @pytest.mark.parametrize(
     'user_client, result',
     (
-        (pytest.lazy_fixture('author_client'), True),
-        (pytest.lazy_fixture('not_author_client'), False)
+        (author_client, True),
+        (not_author_client, False)
     )
 )
 def test_edit_comment(user_client, result, news_id, comment, form_comment):
     """Проверка возможности редактирования комментариев разными юзерами"""
     url = reverse('news:edit', args=(comment.id,))
-    old_comment_text = comment.text
     response = user_client.post(url, data=form_comment)
-    comment.refresh_from_db()
+    edited_comment = Comment.objects.get()
     if result:
         assertRedirects(
             response, reverse('news:detail', args=news_id) + '#comments'
         )
-        assert comment.text == form_comment['text']
+        assert edited_comment.text == form_comment['text']
     else:
         assert response.status_code == HTTPStatus.NOT_FOUND
-        assert comment.text == old_comment_text
+        assert edited_comment.text == comment.text

@@ -1,13 +1,14 @@
 import pytest
-
 from django.conf import settings
 from django.urls import reverse
 
 from news.forms import CommentForm
 
+author_client = pytest.lazy_fixture('author_client')
+client = pytest.lazy_fixture('client')
 
-@pytest.mark.django_db
-@pytest.mark.usefixtures('eleven_news')
+
+@pytest.mark.usefixtures('many_news')
 def test_news_count(client):
     """Тест корректности отображения нужного кол-ва новостей на главной"""
     url = reverse('news:home')
@@ -16,8 +17,7 @@ def test_news_count(client):
     assert object_list.count() == settings.NEWS_COUNT_ON_HOME_PAGE
 
 
-@pytest.mark.django_db
-@pytest.mark.usefixtures('eleven_news')
+@pytest.mark.usefixtures('many_news')
 def test_news_order(client):
     """Тест корректной сортировки новостей"""
     url = reverse('news:home')
@@ -28,7 +28,6 @@ def test_news_order(client):
     assert all_dates == expected_dates
 
 
-@pytest.mark.django_db
 @pytest.mark.usefixtures('many_comments')
 def test_comment_order(client, news_id):
     """Тест корректной сортировки комментариев"""
@@ -42,12 +41,11 @@ def test_comment_order(client, news_id):
     assert all_timestamps == expected_reslut
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     'user_client, result',
     (
-        (pytest.lazy_fixture('author_client'), True),
-        (pytest.lazy_fixture('client'), False)
+        (author_client, True),
+        (client, False)
     )
 )
 def test_detail_page_has_comment_form(user_client, result, news_id):

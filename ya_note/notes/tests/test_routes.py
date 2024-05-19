@@ -1,59 +1,37 @@
 from http import HTTPStatus
 
-from django.contrib.auth import get_user_model
-from django.test import TestCase
-from django.urls import reverse
-
-from notes.models import Note
-
-User = get_user_model()
+from .common import TestCommon
 
 
-class TestRoutes(TestCase):
+class TestRoutes(TestCommon):
     """Класс для теста маршрутов."""
-
-    @classmethod
-    def setUpTestData(cls):
-        """Фикстуры класса TestRoutes."""
-        cls.author = User.objects.create(username='Автор')
-        cls.reader = User.objects.create(username='Не Автор')
-        cls.note = Note.objects.create(
-            title='Заметка',
-            text='Текст заметки',
-            slug='zametka',
-            author=cls.author
-        )
 
     def test_availability_for_note_view_edit_and_delete(self):
         """Доступность страниц просмотра/редактирования/удаления заметки.
 
         Для автора и другого авторизованного пользователя
         """
+        urls = (self.edit_url, self.delete_url, self.detail_url)
         users_statuses = (
             (self.author, HTTPStatus.OK),
-            (self.reader, HTTPStatus.NOT_FOUND)
+            (self.not_author, HTTPStatus.NOT_FOUND)
         )
         for user, status in users_statuses:
             self.client.force_login(user)
-            for name in ('notes:edit', 'notes:delete', 'notes:detail'):
+            for url in urls:
                 with self.subTest(user=user):
-                    url = reverse(name, args=(self.note.slug,))
                     response = self.client.get(url)
                     self.assertEqual(response.status_code, status)
 
     def test_anon_redirects(self):
         """Проверка редиректов для анонимного юзера."""
-        login_url = reverse('users:login')
-        for name in (
-            'notes:edit', 'notes:delete', 'notes:detail', 'notes:success',
-            'notes:list'
-        ):
-            with self.subTest(name=name):
-                if name in ('notes:success', 'notes:list'):
-                    url = reverse(name)
-                else:
-                    url = reverse(name, args=(self.note.slug,))
-                redirect_url = f'{login_url}?next={url}'
+        urls = (
+            self.edit_url, self.delete_url, self.detail_url,
+            self.success_url, self.list_url
+        )
+        for url in urls:
+            with self.subTest(url=url):
+                redirect_url = f'{self.login_url}?next={url}'
                 response = self.client.get(url)
                 self.assertRedirects(response, redirect_url)
 
@@ -63,11 +41,11 @@ class TestRoutes(TestCase):
         Проверяются следующие страницы: главная, страница новости, страница
         логина, страница разлогирования, страница регистрации.
         """
-        for name in (
-            'notes:home', 'users:login', 'users:logout', 'users:signup'
-        ):
-            with self.subTest():
-                url = reverse(name)
+        urls = (
+            self.home_url, self.login_url, self.logout_url, self.signup_url
+        )
+        for url in urls:
+            with self.subTest(url=url):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
@@ -76,9 +54,8 @@ class TestRoutes(TestCase):
 
         добавления заметки, успешного добавления заметки
         """
-        self.client.force_login(self.author)
-        for name in ('notes:list', 'notes:add', 'notes:success'):
-            with self.subTest():
-                url = reverse(name)
-                response = self.client.get(url)
+        urls = (self.list_url, self.add_url, self.success_url)
+        for url in urls:
+            with self.subTest(url=url):
+                response = self.author_client.get(url)
                 self.assertEqual(response.status_code, HTTPStatus.OK)

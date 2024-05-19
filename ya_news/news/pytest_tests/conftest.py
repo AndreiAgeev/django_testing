@@ -1,6 +1,6 @@
-import pytest
 from datetime import datetime, timedelta
 
+import pytest
 from django.conf import settings
 from django.test import Client
 from django.utils import timezone
@@ -8,6 +8,7 @@ from django.utils import timezone
 from news.models import Comment, News
 
 
+# Фикстуры для новостей
 @pytest.fixture
 def news():
     return News.objects.create(title='Заголовок', text='Текст')
@@ -19,7 +20,7 @@ def news_id(news):
 
 
 @pytest.fixture
-def eleven_news():
+def many_news():
     eleven_news = [
         News(
             title=f'Новость {index}',
@@ -31,6 +32,7 @@ def eleven_news():
     return News.objects.bulk_create(eleven_news)
 
 
+# Фикстуры для юзеров
 @pytest.fixture
 def author(django_user_model):
     return django_user_model.objects.create(username='Author')
@@ -55,6 +57,7 @@ def not_author_client(not_author):
     return client
 
 
+# Фикстуры для комментариев
 @pytest.fixture
 def comment(author, news):
     return Comment.objects.create(
@@ -82,3 +85,19 @@ def many_comments(news, author):
 @pytest.fixture
 def form_comment():
     return {'text': 'Комментарий'}
+
+
+# Фикстуры, принимающиеся автоматически
+@pytest.fixture(autouse=True)
+def a_enable_db_access_for_all_tests(db):
+    pass
+
+
+@pytest.fixture(autouse=True)
+def b_delete_all_comments():
+    Comment.objects.all().delete()
+
+
+@pytest.fixture(autouse=True)
+def c_delete_all_news():
+    News.objects.all().delete()

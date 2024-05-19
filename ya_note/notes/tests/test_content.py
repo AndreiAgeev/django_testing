@@ -1,39 +1,19 @@
-from django.contrib.auth import get_user_model
-from django.test import TestCase
-from django.urls import reverse
-
 from notes.forms import NoteForm
-from notes.models import Note
-
-User = get_user_model()
+from .common import TestCommon
 
 
-class TestContent(TestCase):
+class TestContent(TestCommon):
     """Класс для теста контента."""
-
-    @classmethod
-    def setUpTestData(cls) -> None:
-        """Фикстуры для клосса TestContent."""
-        cls.author = User.objects.create(username='Автор')
-        cls.not_author = User.objects.create(username='Не автор')
-        cls.note = Note.objects.create(
-            title='Заголовок',
-            text='Текст',
-            slug='zagolovok',
-            author=cls.author
-        )
-        cls.note_edit_url = reverse('notes:edit', args=(cls.note.slug,))
-        cls.note_create_url = reverse('notes:add')
 
     def test_auth_user_has_form_create_delete(self):
         """На страницах создания и редактирования заметки есть объект формы.
 
         Для авторизоавнного пользователя
         """
-        self.client.force_login(self.author)
-        for url in (self.note_create_url, self.note_edit_url):
+        urls = (self.add_url, self.edit_url)
+        for url in urls:
             with self.subTest():
-                response = self.client.get(url)
+                response = self.author_client.get(url)
                 self.assertIn('form', response.context)
                 self.assertIsInstance(response.context['form'], NoteForm)
 
@@ -46,10 +26,9 @@ class TestContent(TestCase):
             (self.author, True),
             (self.not_author, False)
         )
-        url = reverse('notes:list')
         for user, result in users_statuses:
-            with self.subTest():
+            with self.subTest(user=user):
                 self.client.force_login(user)
-                response = self.client.get(url)
+                response = self.client.get(self.list_url)
                 object_list = response.context['object_list']
                 self.assertIs(self.note in object_list, result)
