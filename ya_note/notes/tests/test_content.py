@@ -12,7 +12,7 @@ class TestContent(TestCommon):
         """
         urls = (self.add_url, self.edit_url)
         for url in urls:
-            with self.subTest():
+            with self.subTest(url=url):
                 response = self.author_client.get(url)
                 self.assertIn('form', response.context)
                 self.assertIsInstance(response.context['form'], NoteForm)

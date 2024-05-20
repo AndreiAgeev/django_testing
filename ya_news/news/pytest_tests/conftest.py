@@ -89,15 +89,15 @@ def form_comment():
 
 # Фикстуры, принимающиеся автоматически
 @pytest.fixture(autouse=True)
-def a_enable_db_access_for_all_tests(db):
+def enable_db_access_for_all_tests(db):
     pass
 
 
 @pytest.fixture(autouse=True)
-def b_delete_all_comments():
+def delete_all_comments(enable_db_access_for_all_tests):
     Comment.objects.all().delete()
 
 
 @pytest.fixture(autouse=True)
-def c_delete_all_news():
+def delete_all_news(delete_all_comments):
     News.objects.all().delete()
